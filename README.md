@@ -3,7 +3,8 @@
 - [安装](#安装)
 - [快速使用](#快速使用)
 - [配置](#配置)
-
+- [graphql-tools快速构建](#graphql-tools快速构建)
+- [#graphql-schema类型](#graphql-schema类型)
 
 ## 简介
 apollo-server是一个在nodejs上构建grqphql服务端的web中间件。支持express，koa ，hapi等框架。
@@ -414,7 +415,134 @@ app.use(router.routes());
 app.use(router.allowedMethods());
 app.listen(PORT);
 ```
+## graphql-tools快速构建
+graphql-tools([官网](https://www.apollographql.com/docs/graphql-tools/))是使用graphql固定的语法构建schema。
+
+安装
+```text
+npm install graphql-tools 
+```
+
+### 实例
+
+```js
+/**
+ * Created by wenshao on 2018/2/10.
+ */
+'use strict';
+const Koa = require('koa');
+const Body = require('koa-bodyparser');
+const router = require('koa-router')();
+const {graphqlKoa} = require('apollo-server-koa');
+const {makeExecutableSchema} = require('graphql-tools');
+const typeDefs = `
+    type User{
+        id:Int!,
+        name:String!
+    }
+    type Query {
+        users: [User]
+    }
+    type Mutation {
+        addUser(name:String!):User
+    }
+    schema {
+        query: Query
+        mutation: Mutation  
+    }
+`;
+const resolvers = {
+    Query: {    // 对应到typeDefs中的 type Query
+        users(root, args, context) {
+            return [{id: 1, name: 'wenshao'}];
+        }
+    },
+    Mutation: { // 对应到typeDefs中的 Mutation
+        addUser(root, args, context) {
+            return {id: 2, name: 'wenshao'};
+        }
+    }
+};
+
+
+const myGraphQLSchema = makeExecutableSchema({
+    typeDefs,
+    resolvers
+});
+const app = new Koa();
+const PORT = 3000;
+
+// Body is needed just for POST.
+app.use(Body());
+
+router.post('/graphql', graphqlKoa({schema: myGraphQLSchema}));
+router.get('/graphql', graphqlKoa({schema: myGraphQLSchema}));
+app.use(router.routes());
+app.use(router.allowedMethods());
+app.listen(PORT);
+```
+
+
+## graphql-schema类型
+### 标量类型（Scalar Types)
+- Int：有符号 32 位整数。
+- Float：有符号双精度浮点值。
+- String：UTF‐8 字符序列。
+- Boolean：true 或者 false。
+- ID：ID 标量类型表示一个唯一标识符，通常用以重新获取对象或者作为缓存中的键。ID 类型使用和 String 一样的方式序列化；然而将其定义为 ID 意味着并不需要人类可读型。
+
+- 自定义标量类型
+
+<br>
+typeDefs
+
+```js 
+#时间类型 
+scalar Date
+```
+resolvers
+
+```js
+const resolvers = {
+    Date: {
+        parseValue(value) {// 序列化
+            return new Date(value);
+        },
+        serialize(value) {// 反序列化
+            return value.getTime();
+        }
+    }
+};
+
+```
+### 对象类型和字段（Object Types）
+一个 GraphQL schema 中的最基本的组件是对象类型，它就表示你可以从服务上获取到什么类型的对象，以及这个对象有什么字段。使用 GraphQL schema language，我们可以这样表示它：
+```text
+type Character {
+  name: String!
+  appearsIn: [Episode]!
+}
+```
+- Character 是一个 GraphQL 对象类型，表示其是一个拥有一些字段的类型。你的 schema 中的大多数类型都会是对象类型。
+- name 和 appearsIn 是 Character 类型上的字段。这意味着在一个操作 Character 类型的 GraphQL 查询中的任何部分，都只能出现 name 和 appearsIn 字段。
+- String 是内置的标量类型之一 —— 标量类型是解析到单个标量对象的类型，无法在查询中对它进行次级选择。后面我们将细述标量类型。
+- String! 表示这个字段是非空的，GraphQL 服务保证当你查询这个字段后总会给你返回一个值。在类型语言里面，我们用一个感叹号来表示这个特性。
+- [Episode]! 表示一个 Episode 数组。因为它也是非空的，所以当你查询 appearsIn 字段的时候，你也总能得到一个数组（零个或者多个元素）。
+
+
+### 参数（Arguments）
+GraphQL 对象类型上的每一个字段都可能有零个或者多个参数，例如下面的 length 字段：
+
+typeDefs
+```text
+type Starship {
+        id: ID!
+        name: String!
+        length(unit:Int=1): Float
+    }
+```
+
+resolvers
 
 ### 项目地址
 https://github.com/wenshaoyan/apollo-server-example
-

@@ -2,10 +2,6 @@
  * Created by wenshao on 2018/2/10.
  */
 'use strict';
-/**
- * Created by wenshao on 2018/2/10.
- */
-'use strict';
 const Koa = require('koa');
 const Body = require('koa-bodyparser');
 const router = require('koa-router')();
