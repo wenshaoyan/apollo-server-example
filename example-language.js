@@ -15,22 +15,41 @@ const typeDefs = `
         name:String!
         create_time:Date
     }
-    type UnitMs{
-        a:String
-    }
-    type UnitS{
-        b:String
-    }
-    
     type Starship {
         id: ID!
         name: String!
         length(unit:Int=1): Float
     }
-
+    enum Episode {
+      NEWHOPE
+      EMPIRE
+      JEDI
+    }
+    interface Vehicle {
+        maxSpeed: Int
+    }
+    type Airplane implements Vehicle {
+        maxSpeed: Int
+        wingspan: Int
+    }
+    
+    type Car implements Vehicle {
+        maxSpeed: Int
+        licensePlate: String
+    }
+    union UnionVehicle = Airplane | Car
+    input ReviewInput {
+        stars: Int!
+        commentary: String
+    }
     type Query {
         users: [User]
         starships: [Starship]
+        episodes: Episode
+        vehicles:Vehicle
+        unionVehicles: UnionVehicle
+        testInput(field:ReviewInput): Int
+        relay: Query
     }
     type Mutation {
         addUser(name:String!):User
@@ -43,10 +62,23 @@ const typeDefs = `
 const resolvers = {
     Query: {
         users(root, args, context) {
-            return [{id: 1, name: 'wenshao',create_time: new Date()}];
+            return [{id: 1, name: 'wenshao', create_time: new Date()}];
         },
         starships() {
-            return [{id:1,name:'1',length:1.1}];
+            return [{id: 1, name: '1', length: 1.1}];
+        },
+        episodes() {
+            return 'EMPIRE';
+        },
+        vehicles() {
+            return {maxSpeed: 1, licensePlate: 'test'}
+        },
+        unionVehicles() {
+            return {maxSpeed: 1, licensePlate: 'test'}
+        },
+        testInput(root, {field}, context) {
+            console.log(field);
+            return 1;
         }
     },
     Mutation: {
@@ -64,8 +96,31 @@ const resolvers = {
     },
     Starship: {
         length(root, {unit}, context) {
-            console.log(root, unit);
-            return root.length;
+            return unit === 1 ? root.length : root.length / 1000;
+        }
+    },
+    Vehicle: {
+        __resolveType(obj, context, info) {
+            if (obj.wingspan) {
+                return 'Airplane';
+            }
+
+            if (obj.licensePlate) {
+                return 'Car';
+            }
+            return null;
+        }
+    },
+    UnionVehicle: {
+        __resolveType(obj, context, info) {
+            if (obj.wingspan) {
+                return 'Airplane';
+            }
+
+            if (obj.licensePlate) {
+                return 'Car';
+            }
+            return null;
         }
     }
 };

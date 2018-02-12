@@ -4,8 +4,8 @@
 - [快速使用](#快速使用)
 - [配置](#配置)
 - [graphql-tools快速构建](#graphql-tools快速构建)
-- [#graphql-schema类型](#graphql-schema类型)
-
+- [graphql-schema类型](#graphql-schema类型)
+- [github-api-v4设计规范分析](#github-api-v4设计规范分析)
 ## 简介
 apollo-server是一个在nodejs上构建grqphql服务端的web中间件。支持express，koa ，hapi等框架。
 [apollo-server官方文档](https://www.apollographql.com/docs/apollo-server/)
@@ -536,13 +536,191 @@ GraphQL 对象类型上的每一个字段都可能有零个或者多个参数，
 typeDefs
 ```text
 type Starship {
-        id: ID!
-        name: String!
-        length(unit:Int=1): Float
-    }
+    id: ID!
+    name: String!
+    length(unit:Int=1): Float
+}
 ```
 
 resolvers
+```js
+const resolvers = {
+    Starship: {
+            length(root, {unit}, context) {
+                return unit === 1 ? root.length : root.length /1000;
+            }
+        }
+}
+```
+
+### 查询和变更类型（The Query and Mutation Types）
+一个schema 中大部分的类型都是普通对象类型，但是一个 schema 内有两个特殊类型,
+每一个 GraphQL 服务都有一个 query 类型，可能有一个 mutation 类型。这两个类型和常规对象类型无差，但是它们之所以特殊，是因为它们定义了每一个 GraphQL 查询的入口。因此如果你看到一个像这样的查询：
+
+typeDefs
+```text
+type Query{
+    test:Int
+}
+type Mutation{
+    test:Int
+}
+schema {
+  query: Query
+  mutation: Mutation
+}
+```
+
+### 枚举类型（Enumeration Types） 
+枚举类型限制了值在可选范围之内。枚举类型只能为String类型
+
+typeDefs
+```text
+enum Episode {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+```
+### 列表和非空（Lists and Non-Null） 
+对象类型、标量以及枚举是 GraphQL 中你唯一可以定义的类型种类。但是当你在 schema 的其他部分使用这些类型时，或者在你的查询变量声明处使用时，你可以给它们应用额外的类型修饰符来影响这些值的验证。我们先来看一个例子：
+
+typeDefs
+```text
+type Character {
+  name: String!
+  appearsIn: [Episode]!
+}
+
+```
+
+### 接口（Interfaces）
+跟许多类型系统一样，GraphQL 支持接口。一个接口是一个抽象类型，它包含某些字段，而对象类型必须包含这些字段，才能算实现了这个接口。
+
+typeDefs
+```text
+interface Vehicle {
+    maxSpeed: Int
+}
+type Airplane implements Vehicle {
+    maxSpeed: Int
+    wingspan: Int
+}
+
+type Car implements Vehicle {
+    maxSpeed: Int
+    licensePlate: String
+}
+type Query {
+    vehicles:Vehicle
+}
+```
+
+resolvers
+```js
+const resolvers = {
+    Query: {
+        vehicles() {
+            return {maxSpeed:1,licensePlate:'test'}
+        }
+    },
+    Vehicle: {
+        __resolveType(obj, context, info){
+            if(obj.wingspan){
+                return 'Airplane';
+            }
+
+            if(obj.licensePlate){
+                return 'Car';
+            }
+            return null;
+        }
+    }
+}
+
+```
+
+### 联合类型（Union Types） 
+联合类型和接口十分相似，但是它并不指定类型之间的任何共同字段。联合类型的成员需要是具体对象类型；你不能使用接口或者其他联合类型来创造一个联合类型。
+
+typeDefs
+```text
+union UnionVehicle = Airplane | Car
+type Query {
+    unionVehicles:UnionVehicle
+}
+```
+
+resolvers
+```js
+const resolvers = {
+    Query: {
+        unionVehicles() {
+            return {maxSpeed:1,licensePlate:'test'}
+        }
+    },
+    UnionVehicle: {
+        __resolveType(obj, context, info){
+            if(obj.wingspan){
+                return 'Airplane';
+            }
+
+            if(obj.licensePlate){
+                return 'Car';
+            }
+            return null;
+        }
+    }
+}
+```
+
+### 输入类型（Input Types） 
+前端传入的对象,通过args进行传入到后端。和输出对象类似,但是关键字为input。输入对象和输出对象不能混用。
+
+typeDefs
+```text
+input ReviewInput {
+    stars: Int!
+    commentary: String
+}
+type Query {
+    testInput(field:ReviewInput): Int
+}
+```
+
+resolvers
+```js
+const resolvers = {
+    Query: {
+         testInput(root, {field}, context) {
+            console.log(field);
+            return 1;
+        }
+    }
+}
+```
+
+
+## github-api-v4设计规范分析
+github-api-v4采用的为graphql规范，之前的版本都为Rest规范。<br>
+[文档地址](https://developer.github.com/v4/) <br>
+[grapiql地址](https://developer.github.com/v4/explorer/)  (需要使用github账号进行登录才能使用)<br>
+
+### schema设计
+- queries:查询。
+- mutations:修改。
+
+### type设计
+- scalars:标量
+- objects:输出对象
+- enums:枚举
+- interfaces:接口
+- unions:联合对象
+- input objects:输入对象
+
+
+
+
 
 ### 项目地址
 https://github.com/wenshaoyan/apollo-server-example
