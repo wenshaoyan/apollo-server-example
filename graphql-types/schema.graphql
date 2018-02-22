@@ -1,0 +1,14 @@
+type Query {
+  topicBanks(test:TestInput!): [TopicBank]
+  topics: [Topic]
+  topicOptions: [TopicOption]
+  airplanes:Airplane
+  cars:Car
+  vehicles:Vehicle
+
+}
+
+# this schema allows the following mutation:
+type Mutation {
+  addTopic(id: Int!):Int
+}

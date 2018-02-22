@@ -1,0 +1,4 @@
+input TestInput{
+    firstName: String
+    name: String = "1"
+}

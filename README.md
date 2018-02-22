@@ -6,6 +6,7 @@
 - [graphql-tools快速构建](#graphql-tools快速构建)
 - [graphql-schema类型](#graphql-schema类型)
 - [github-api-v4设计规范分析](#github-api-v4设计规范分析)
+- [设计规范项目实例](#设计规范项目实例)
 ## 简介
 apollo-server是一个在nodejs上构建grqphql服务端的web中间件。支持express，koa ，hapi等框架。
 [apollo-server官方文档](https://www.apollographql.com/docs/apollo-server/)
@@ -703,7 +704,7 @@ const resolvers = {
 
 ## github-api-v4设计规范分析
 github-api-v4采用的为graphql规范，之前的版本都为Rest规范。<br>
-[文档地址](https://developer.github.com/v4/) <br>
+[文档地址](https://developer.github.com/v4/) 文档grapiql<br> 
 [grapiql地址](https://developer.github.com/v4/explorer/)  (需要使用github账号进行登录才能使用)<br>
 
 ### schema设计
@@ -718,9 +719,39 @@ github-api-v4采用的为graphql规范，之前的版本都为Rest规范。<br>
 - unions:联合对象
 - input objects:输入对象
 
+### 命名规范
+- scalar:首字母大写，尽量以单个的单词简单命名。如Int String。
+- object:首字母大写吗，如Deployment DeploymentStatus。
+- enum:首字母大写，如果enum对应object中的字段，则以object名称加上字段名称。如DeploymentState。
+- interface:首字母大写，如Node Actor。
+- union:首字母大写，如PullRequestTimelineItem。
+- input object:和object一致。
+- query:首字母小写，如查询结果集为单个对象，则为对象名，如果为查询的结果集为多数组，则为对象的复数。如license查询返回的为license，
+licenses查询方法返回的为[License]。
+- mutation:首字母小写，根据 动词+object。可参考的动词:<br>
+add: 增加简单记录，影响单个对象，如addStar。<br>
+create: 创建复杂记录，影响多个对象，如createProject。<br>
+remove: 删除简单记录，影响单个对象，如removeStar。<br>
+delete: 删除复杂记录，影响多个对象，如deleteProject。<br>
+update: 更新记录，如updateProject。<br>
 
 
 
 
+## 设计规范项目实例
+根据上面的github api的设计规范可以得出适应自己项目的一些规范。下面为作者本人的项目的规范，可供参考。
+
+### 目录结构
+- graphql-type
+   - enums.graphql
+   - input-objects.graphql
+   - interfaces.graphql
+   - objects.graphql
+   - schema.graphql
+   - unions.graphql
+- graphql-resolvers
+   - mutations // 对应的所有mutation操作，按业务划分不同的文件
+   - queries // 对应的所有query操作，按业务划分不同的文件
+   - resolvers // 对应的所有resolve操作，按业务划分不同的文件
 ### 项目地址
 https://github.com/wenshaoyan/apollo-server-example
